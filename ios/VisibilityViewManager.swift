@@ -1,4 +1,5 @@
 import Foundation
+import React
 
 @objc(VisibilityViewManager)
 class VisibilityViewManager: RCTViewManager {
