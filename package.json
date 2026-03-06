@@ -87,6 +87,9 @@
     "react": "*",
     "react-native": "*"
   },
+  "resolutions": {
+    "locate-path": "6.0.0"
+  },
   "workspaces": [
     "example"
   ],

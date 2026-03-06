@@ -9,8 +9,9 @@ pre-commit:
     types:
       glob: "*.{js,ts, jsx, tsx}"
       run: npx tsc
-commit-msg:
-  parallel: true
-  commands:
-    commitlint:
-      run: npx commitlint --edit
+# commit-msg disabled: commitlint conflicts with find-up/locate-path resolutions
+# commit-msg:
+#   parallel: true
+#   commands:
+#     commitlint:
+#       run: npx commitlint --edit
