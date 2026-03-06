@@ -27,10 +27,8 @@ class VisibilityView: UIView {
     override func didMoveToWindow() {
         super.didMoveToWindow()
         if window != nil {
-            console("✅ ATTACHED to window")
             startTracking()
         } else {
-            console("❌ REMOVED from window")
             stopTracking()
         }
     }
@@ -89,7 +87,6 @@ class VisibilityView: UIView {
     
     private func onScrollDetected() {
         if !isScrolling {
-            console("🔄 Scroll STARTED - pausing videos")
             isScrolling = true
             updateVisibility(false) // Immediately blur when scrolling starts
         }
@@ -102,7 +99,6 @@ class VisibilityView: UIView {
     }
     
     private func onScrollStopped() {
-        console("🛑 Scroll STOPPED - checking visibility")
         isScrolling = false
         checkVisibility()
     }
@@ -143,7 +139,6 @@ class VisibilityView: UIView {
         if visible == isCurrentlyVisible { return }
 
         isCurrentlyVisible = visible
-        console("🎯 FOCUS: \(visible ? "PLAYING ✅" : "PAUSED ❌")")
         onVisibilityChange?(["focused": visible])
     }
     
