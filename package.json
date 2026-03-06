@@ -34,7 +34,8 @@
   "scripts": {
     "example": "yarn workspace react-native-visibility-tracker-example",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
-    "prepare": "bob build",
+    "build": "bob build",
+    "prepack": "bob build",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
@@ -73,6 +74,7 @@
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react-native": "^5.0.0",
     "jest": "^29.7.0",
     "lefthook": "^2.0.3",
     "prettier": "^3.8.1",
