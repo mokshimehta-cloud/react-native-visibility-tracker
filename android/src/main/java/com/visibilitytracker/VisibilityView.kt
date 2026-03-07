@@ -3,7 +3,6 @@ package com.visibilitytracker
 import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
-import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.facebook.react.bridge.Arguments
@@ -32,23 +31,23 @@ class VisibilityView(
     private var isFocused = false
     private var threshold = 0.5f
     private var isScrolling = false
-    private var parentScrollView: ViewGroup? = null
+    private var lastScrollY = 0
+    private var lastScrollX = 0
 
     private val handler = Handler(Looper.getMainLooper())
     private val scrollStopDelay = 150L
-
-    // Reusable Rect objects to avoid allocation during scroll
-    private val viewRect = Rect()
-    private val scrollRect = Rect()
-    private val intersectionRect = Rect()
+    private val frameCheckDelay = 16L // ~60fps
 
     private val scrollStopRunnable = Runnable {
         isScrolling = false
         checkVisibility()
     }
 
-    private val scrollListener = View.OnScrollChangeListener { _, _, _, _, _ ->
-        onScrollDetected()
+    private val frameCheckRunnable = object : Runnable {
+        override fun run() {
+            checkScrollState()
+            handler.postDelayed(this, frameCheckDelay)
+        }
     }
 
     fun setThreshold(value: Float) {
@@ -57,19 +56,13 @@ class VisibilityView(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        
-        // Find and cache the parent scroll view ONCE
-        parentScrollView = findParentReactScrollView()
-        parentScrollView?.setOnScrollChangeListener(scrollListener)
-        
-        // Initial visibility check (delayed to ensure layout is complete)
+        handler.post(frameCheckRunnable)
         handler.postDelayed({ checkVisibility() }, 100)
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        parentScrollView?.setOnScrollChangeListener(null)
-        parentScrollView = null
+        handler.removeCallbacks(frameCheckRunnable)
         handler.removeCallbacks(scrollStopRunnable)
     }
 
@@ -84,55 +77,81 @@ class VisibilityView(
         return null
     }
 
+    private fun checkScrollState() {
+        val scrollView = findParentReactScrollView()
+
+        if (scrollView != null) {
+            val currentScrollY = scrollView.scrollY
+            val currentScrollX = scrollView.scrollX
+
+            if (currentScrollY != lastScrollY || currentScrollX != lastScrollX) {
+                onScrollDetected()
+                lastScrollY = currentScrollY
+                lastScrollX = currentScrollX
+            }
+        }
+
+        if (!isScrolling) {
+            checkVisibility()
+        }
+    }
+
     private fun onScrollDetected() {
         if (!isScrolling) {
             isScrolling = true
             updateFocus(false)
         }
+
         handler.removeCallbacks(scrollStopRunnable)
         handler.postDelayed(scrollStopRunnable, scrollStopDelay)
     }
 
     private fun checkVisibility() {
-        if (isScrolling || !isAttachedToWindow || height == 0) {
-            if (!isScrolling) updateFocus(false)
+        if (isScrolling) {
             return
         }
 
+        if (!isAttachedToWindow || height == 0) {
+            updateFocus(false)
+            return
+        }
+
+        val viewRect = Rect()
         val isVisible = getGlobalVisibleRect(viewRect)
+
         if (!isVisible) {
             updateFocus(false)
             return
         }
 
-        val scrollView = parentScrollView
-        val visibleHeight: Float
+        val parentScrollView = findParentReactScrollView()
+        if (parentScrollView != null) {
+            val scrollRect = Rect()
+            parentScrollView.getGlobalVisibleRect(scrollRect)
 
-        if (scrollView != null) {
-            scrollView.getGlobalVisibleRect(scrollRect)
-            intersectionRect.set(viewRect)
-            
-            if (!intersectionRect.intersect(scrollRect)) {
+            if (!viewRect.intersect(scrollRect)) {
                 updateFocus(false)
                 return
             }
-            visibleHeight = intersectionRect.height().toFloat()
-        } else {
-            visibleHeight = viewRect.height().toFloat()
         }
 
-        val ratio = visibleHeight / height.toFloat()
+        val visibleHeight = viewRect.height().toFloat()
+        val totalHeight = height.toFloat()
+        val ratio = visibleHeight / totalHeight
+
         updateFocus(ratio >= threshold)
     }
 
     private fun updateFocus(visible: Boolean) {
         if (visible == isFocused) return
+
         isFocused = visible
 
         try {
             val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(reactContext, id)
             val surfaceId = UIManagerHelper.getSurfaceId(reactContext)
             dispatcher?.dispatchEvent(VisibilityChangeEvent(surfaceId, id, visible))
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
     }
 }
