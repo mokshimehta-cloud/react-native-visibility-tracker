@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Video from 'react-native-video';
 import { VisibilityView } from 'react-native-visibility-tracker';
@@ -162,35 +162,36 @@ const flattenFeed = (feed: FeedItem[]): FlatRow[] => {
 
 const DATA = flattenFeed(FEED);
 
+// Persists video positions across FlashList remounts
+const videoPositions = new Map<string, number>();
+
 const VideoRow = ({ url }: { url: string }) => {
   const [paused, setPaused] = useState(true);
+  const videoRef = useRef<any>(null);
 
   return (
     <View style={styles.videoContainer}>
       <VisibilityView
         style={{ flex: 1 }}
         threshold={0.8}
-        onFocus={() => {
-          console.log('Visible');
-          setPaused(false);
-        }}
-        onBlur={() => {
-          console.log('Hidden');
-          setPaused(true);
-        }}
+        onFocus={() => setPaused(false)}
+        onBlur={() => setPaused(true)}
       >
         <Video
+          ref={videoRef}
           source={{ uri: url }}
           paused={paused}
           repeat
           resizeMode="cover"
           style={StyleSheet.absoluteFill}
-          bufferConfig={{
-            minBufferMs: 15000,
-            maxBufferMs: 50000,
-            bufferForPlaybackMs: 2500,
-            bufferForPlaybackAfterRebufferMs: 5000,
+          onReadyForDisplay={() => {
+            const saved = videoPositions.get(url);
+            if (saved) videoRef.current?.seek(saved);
           }}
+          onProgress={({ currentTime }) => {
+            videoPositions.set(url, currentTime);
+          }}
+          progressUpdateInterval={1000}
         />
       </VisibilityView>
     </View>
@@ -228,7 +229,7 @@ export default function App() {
         data={DATA}
         renderItem={renderRow}
         keyExtractor={(item) => item.id}
-        // estimatedItemSize={500}
+        getItemType={(item) => item.kind}
       />
     </View>
   );

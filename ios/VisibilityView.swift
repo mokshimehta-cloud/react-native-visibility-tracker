@@ -10,6 +10,7 @@ class VisibilityView: UIView {
     private var isScrolling = false
     private var scrollStopTimer: Timer?
     private let scrollStopDelay: TimeInterval = 0.15
+    private var lastTimerReset: CFTimeInterval = 0
 
     // Cached once on attach – avoids repeated superview traversal on every frame
     private weak var cachedScrollView: UIScrollView?
@@ -102,10 +103,12 @@ class VisibilityView: UIView {
     }
 
     private func onScrollDetected() {
-        if !isScrolling {
-            isScrolling = true
-            updateVisibility(false)
-        }
+        isScrolling = true
+        // Throttle to once per frame (~16 ms) so N views observing the same scroll view
+        // don't each invalidate/create a Timer on every KVO callback.
+        let now = CACurrentMediaTime()
+        guard now - lastTimerReset >= 0.016 else { return }
+        lastTimerReset = now
         scrollStopTimer?.invalidate()
         scrollStopTimer = Timer.scheduledTimer(withTimeInterval: scrollStopDelay, repeats: false) { [weak self] _ in
             self?.isScrolling = false

@@ -34,6 +34,7 @@ class VisibilityView(
     private var isScrolling = false
     private var lastScrollY = 0
     private var lastScrollX = 0
+    private var lastScrollHandledAt = 0L
 
     // Cached once on attach – avoids repeated tree walks every frame
     private var cachedScrollView: ViewGroup? = null
@@ -50,7 +51,7 @@ class VisibilityView(
         checkVisibility()
     }
 
-    // Fires whenever any scroll in the view tree changes – replaces 60 fps polling loop.
+    // Fires whenever any scroll in the view tree changes.
     // We filter by our cached parent so unrelated scroll views don't cause false blur events.
     private val scrollChangedListener = ViewTreeObserver.OnScrollChangedListener {
         val sv = cachedScrollView ?: return@OnScrollChangedListener
@@ -61,12 +62,6 @@ class VisibilityView(
             lastScrollX = sx
             onScrollDetected()
         }
-    }
-
-    // Catches initial layout, orientation changes, keyboard show/hide, etc.
-    // During active scroll this is a negligible boolean check.
-    private val globalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
-        if (!isScrolling) checkVisibility()
     }
 
     fun setThreshold(value: Float) {
@@ -81,10 +76,7 @@ class VisibilityView(
             lastScrollY = it.scrollY
             lastScrollX = it.scrollX
         }
-        with(viewTreeObserver) {
-            addOnScrollChangedListener(scrollChangedListener)
-            addOnGlobalLayoutListener(globalLayoutListener)
-        }
+        viewTreeObserver.addOnScrollChangedListener(scrollChangedListener)
         // Defer until the first layout pass completes
         handler.postDelayed({ checkVisibility() }, 100)
     }
@@ -93,10 +85,16 @@ class VisibilityView(
         super.onDetachedFromWindow()
         if (viewTreeObserver.isAlive) {
             viewTreeObserver.removeOnScrollChangedListener(scrollChangedListener)
-            viewTreeObserver.removeOnGlobalLayoutListener(globalLayoutListener)
         }
         handler.removeCallbacksAndMessages(null)
         cachedScrollView = null
+    }
+
+    // Handles initial render, orientation changes, and keyboard show/hide
+    // scoped to this view only — avoids the global layout listener firing for the entire tree.
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        super.onLayout(changed, l, t, r, b)
+        if (changed && !isScrolling) checkVisibility()
     }
 
     private fun findParentReactScrollView(): ViewGroup? {
@@ -109,10 +107,12 @@ class VisibilityView(
     }
 
     private fun onScrollDetected() {
-        if (!isScrolling) {
-            isScrolling = true
-            updateFocus(false)
-        }
+        isScrolling = true
+        // Throttle to once per frame (~16 ms) so N views on the same scroll view
+        // don't each schedule/cancel a runnable on every scroll callback.
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - lastScrollHandledAt < 16L) return
+        lastScrollHandledAt = now
         handler.removeCallbacks(scrollStopRunnable)
         handler.postDelayed(scrollStopRunnable, scrollStopDelay)
     }
