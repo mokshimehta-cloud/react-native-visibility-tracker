@@ -1,41 +1,291 @@
-import { Text, View, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import Video from 'react-native-video';
 import { VisibilityView } from 'react-native-visibility-tracker';
+import { FlashList } from '@shopify/flash-list';
+
+const { width } = Dimensions.get('window');
+
+type VideoItem = { kind: 'video'; id: string; title: string; urls: string[] };
+type TextItem = { kind: 'text'; id: string; heading: string; body: string };
+type BannerItem = { kind: 'block'; id: string; label: string; color: string };
+type FeedItem = VideoItem | TextItem | BannerItem;
+
+type FlatRow =
+  | { kind: 'video'; id: string; url: string }
+  | { kind: 'text'; id: string; heading: string; body: string }
+  | { kind: 'block'; id: string; label: string; color: string };
+
+const FEED: FeedItem[] = [
+  {
+    kind: 'text',
+    id: 't1',
+    heading: 'Welcome',
+    body: 'Scroll to see videos',
+  },
+  {
+    kind: 'video',
+    id: 'v1',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+  {
+    kind: 'block',
+    id: 'b1',
+    label: 'Trending',
+    color: '#FF6B35',
+  },
+  {
+    kind: 'video',
+    id: 'v2',
+    title: 'Short Films',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+      'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_5MB.mp4',
+    ],
+  },
+  {
+    kind: 'video',
+    id: 'v3',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+  {
+    kind: 'video',
+    id: 'v4',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+  {
+    kind: 'video',
+    id: 'v5',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+  {
+    kind: 'video',
+    id: 'v6',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+  {
+    kind: 'video',
+    id: 'v7',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+  {
+    kind: 'video',
+    id: 'v8',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+  {
+    kind: 'video',
+    id: 'v9',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+  {
+    kind: 'video',
+    id: 'v10',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+  {
+    kind: 'video',
+    id: 'v11',
+    title: 'Nature',
+    urls: [
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    ],
+  },
+];
+
+const flattenFeed = (feed: FeedItem[]): FlatRow[] => {
+  const rows: FlatRow[] = [];
+
+  feed.forEach((item) => {
+    if (item.kind === 'video') {
+      item.urls.forEach((url, i) =>
+        rows.push({
+          kind: 'video',
+          id: `${item.id}-${i}`,
+          url,
+        })
+      );
+    } else {
+      rows.push(item);
+    }
+  });
+
+  return rows;
+};
+
+const DATA = flattenFeed(FEED);
+
+const VideoRow = ({ url }: { url: string }) => {
+  const [paused, setPaused] = useState(true);
+
+  return (
+    <View style={styles.videoContainer}>
+      <VisibilityView
+        style={{ flex: 1 }}
+        threshold={0.8}
+        onFocus={() => {
+          console.log('Visible');
+          setPaused(false);
+        }}
+        onBlur={() => {
+          console.log('Hidden');
+          setPaused(true);
+        }}
+      >
+        <Video
+          source={{ uri: url }}
+          paused={paused}
+          repeat
+          resizeMode="cover"
+          style={StyleSheet.absoluteFill}
+          bufferConfig={{
+            minBufferMs: 15000,
+            maxBufferMs: 50000,
+            bufferForPlaybackMs: 2500,
+            bufferForPlaybackAfterRebufferMs: 5000,
+          }}
+        />
+      </VisibilityView>
+    </View>
+  );
+};
 
 export default function App() {
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.placeholder} />
-      <VisibilityView
-        onFocus={() => console.log('VisibilityView focused (visible)')}
-        onBlur={() => console.log('VisibilityView blurred (not visible)')}
-      >
-        <View style={styles.box}>
-          <Text style={styles.text}>
-            VisibilityView – check console for focus/blur
-          </Text>
+  const renderRow = ({ item }: { item: FlatRow }) => {
+    if (item.kind === 'text') {
+      return (
+        <View key={item.id} style={styles.textCard}>
+          <Text style={styles.heading}>{item.heading}</Text>
+          <Text style={styles.body}>{item.body}</Text>
         </View>
-      </VisibilityView>
-      <View style={styles.placeholder} />
-    </ScrollView>
+      );
+    }
+
+    if (item.kind === 'block') {
+      return (
+        <View
+          key={item.id}
+          style={[styles.banner, { backgroundColor: item.color }]}
+        >
+          <Text style={styles.bannerText}>{item.label}</Text>
+        </View>
+      );
+    }
+
+    return <VideoRow key={item.id} url={item.url} />;
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <FlashList
+        data={DATA}
+        renderItem={renderRow}
+        keyExtractor={(item) => item.id}
+        // estimatedItemSize={500}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  videoContainer: {
+    height: 500,
+    backgroundColor: 'black',
+    marginVertical: 6,
   },
-  placeholder: {
-    height: 400,
-    backgroundColor: '#333',
+
+  video: {
+    width,
+    height: 500,
   },
-  box: {
-    height: 200,
-    backgroundColor: '#1a73e8',
-    justifyContent: 'center',
-    alignItems: 'center',
+
+  badge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: 6,
+    borderRadius: 8,
   },
-  text: {
+
+  badgeText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 11,
+  },
+
+  textCard: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+  },
+
+  heading: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+
+  body: {
+    fontSize: 14,
+    marginTop: 6,
+  },
+
+  banner: {
+    margin: 16,
+    padding: 30,
+    borderRadius: 10,
+  },
+
+  bannerText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
