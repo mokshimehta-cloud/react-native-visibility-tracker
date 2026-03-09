@@ -167,6 +167,9 @@ const videoPositions = new Map<string, number>();
 
 const VideoRow = ({ url }: { url: string }) => {
   const [paused, setPaused] = useState(true);
+  // Don't load source until the item has been focused at least once,
+  // so off-screen videos never buffer and consume memory.
+  const [loaded, setLoaded] = useState(false);
   const videoRef = useRef<any>(null);
 
   return (
@@ -174,25 +177,30 @@ const VideoRow = ({ url }: { url: string }) => {
       <VisibilityView
         style={{ flex: 1 }}
         threshold={0.8}
-        onFocus={() => setPaused(false)}
+        onFocus={() => {
+          setLoaded(true);
+          setPaused(false);
+        }}
         onBlur={() => setPaused(true)}
       >
-        <Video
-          ref={videoRef}
-          source={{ uri: url }}
-          paused={paused}
-          repeat
-          resizeMode="cover"
-          style={StyleSheet.absoluteFill}
-          onReadyForDisplay={() => {
-            const saved = videoPositions.get(url);
-            if (saved) videoRef.current?.seek(saved);
-          }}
-          onProgress={({ currentTime }) => {
-            videoPositions.set(url, currentTime);
-          }}
-          progressUpdateInterval={1000}
-        />
+        {loaded && (
+          <Video
+            ref={videoRef}
+            source={{ uri: url }}
+            paused={paused}
+            repeat
+            resizeMode="cover"
+            style={StyleSheet.absoluteFill}
+            onReadyForDisplay={() => {
+              const saved = videoPositions.get(url);
+              if (saved) videoRef.current?.seek(saved);
+            }}
+            onProgress={({ currentTime }) => {
+              videoPositions.set(url, currentTime);
+            }}
+            progressUpdateInterval={1000}
+          />
+        )}
       </VisibilityView>
     </View>
   );
