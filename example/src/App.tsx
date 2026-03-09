@@ -167,10 +167,9 @@ const videoPositions = new Map<string, number>();
 
 const VideoRow = ({ url }: { url: string }) => {
   const [paused, setPaused] = useState(true);
-  // Don't load source until the item has been focused at least once,
-  // so off-screen videos never buffer and consume memory.
-  const [loaded, setLoaded] = useState(false);
   const videoRef = useRef<any>(null);
+  const isReady = useRef(false);
+  const isFocused = useRef(false);
 
   return (
     <View style={styles.videoContainer}>
@@ -178,29 +177,42 @@ const VideoRow = ({ url }: { url: string }) => {
         style={{ flex: 1 }}
         threshold={0.8}
         onFocus={() => {
-          setLoaded(true);
-          setPaused(false);
+          isFocused.current = true;
+          if (isReady.current) setPaused(false);
         }}
-        onBlur={() => setPaused(true)}
+        onBlur={() => {
+          isFocused.current = false;
+          setPaused(true);
+        }}
       >
-        {loaded && (
-          <Video
-            ref={videoRef}
-            source={{ uri: url }}
-            paused={paused}
-            repeat
-            resizeMode="cover"
-            style={StyleSheet.absoluteFill}
-            onReadyForDisplay={() => {
-              const saved = videoPositions.get(url);
-              if (saved) videoRef.current?.seek(saved);
-            }}
-            onProgress={({ currentTime }) => {
-              videoPositions.set(url, currentTime);
-            }}
-            progressUpdateInterval={1000}
-          />
-        )}
+        <Video
+          ref={videoRef}
+          source={{ uri: url }}
+          paused={paused}
+          repeat
+          resizeMode="cover"
+          style={StyleSheet.absoluteFill}
+          onLoad={() => {
+            // Seek while still paused — fires before onReadyForDisplay so
+            // the first displayed frame is already at the saved position.
+            const saved = videoPositions.get(url);
+            if (saved) videoRef.current?.seek(saved);
+          }}
+          onReadyForDisplay={() => {
+            isReady.current = true;
+            if (isFocused.current) setPaused(false);
+          }}
+          onProgress={({ currentTime }) => {
+            videoPositions.set(url, currentTime);
+          }}
+          progressUpdateInterval={1000}
+          bufferConfig={{
+            minBufferMs: 2500,
+            maxBufferMs: 5000,
+            bufferForPlaybackMs: 1000,
+            bufferForPlaybackAfterRebufferMs: 2000,
+          }}
+        />
       </VisibilityView>
     </View>
   );
