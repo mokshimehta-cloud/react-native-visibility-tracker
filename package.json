@@ -1,6 +1,6 @@
 {
   "name": "@devx-commerce/react-native-viewport-observer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "feature for having more videos forhandling smoothly in react native without extra load.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
