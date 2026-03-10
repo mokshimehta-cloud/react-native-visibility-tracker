@@ -4,4 +4,4 @@ export interface Spec extends TurboModule {
 }
 declare const _default: Spec;
 export default _default;
-//# sourceMappingURL=NativeVisibilityTracker.d.ts.map
+//# sourceMappingURL=NativeViewportObserver.d.ts.map

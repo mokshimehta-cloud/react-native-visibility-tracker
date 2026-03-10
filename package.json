@@ -1,5 +1,5 @@
 {
-  "name": "react-native-viewport-observer",
+  "name": "@devx-commerce/react-native-viewport-observer",
   "version": "0.1.0",
   "description": "feature for having more videos forhandling smoothly in react native without extra load.",
   "main": "./lib/module/index.js",
@@ -57,7 +57,8 @@
   },
   "homepage": "https://github.com/mokshimehta-cloud/react-native-viewport-observer#readme",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^19.8.1",
