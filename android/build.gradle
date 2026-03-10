@@ -1,5 +1,5 @@
 buildscript {
-  ext.VisibilityTracker = [
+  ext.ViewportObserver = [
     kotlinVersion: "2.0.21",
     minSdkVersion: 24,
     compileSdkVersion: 36,
@@ -11,7 +11,7 @@ buildscript {
       return rootProject.ext.get(prop)
     }
 
-    return VisibilityTracker[prop]
+    return ViewportObserver[prop]
   }
 
   repositories {
@@ -33,7 +33,7 @@ apply plugin: "kotlin-android"
 apply plugin: "com.facebook.react"
 
 android {
-  namespace "com.visibilitytracker"
+  namespace "com.viewportobserver"
 
   compileSdkVersion getExtOrDefault("compileSdkVersion")
 

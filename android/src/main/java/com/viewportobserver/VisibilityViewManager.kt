@@ -1,4 +1,4 @@
-package com.visibilitytracker
+package com.viewportobserver
 
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.ViewGroupManager

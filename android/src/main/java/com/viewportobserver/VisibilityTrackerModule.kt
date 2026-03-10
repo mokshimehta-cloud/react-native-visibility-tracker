@@ -1,15 +1,15 @@
-package com.visibilitytracker
+package com.viewportobserver
 
 import com.facebook.react.bridge.ReactApplicationContext
 
 class VisibilityTrackerModule(reactContext: ReactApplicationContext) :
-  NativeVisibilityTrackerSpec(reactContext) {
+  NativeViewportObserverSpec(reactContext) {
 
   override fun multiply(a: Double, b: Double): Double {
     return a * b
   }
 
   companion object {
-    const val NAME = NativeVisibilityTrackerSpec.NAME
+    const val NAME = NativeViewportObserverSpec.NAME
   }
 }

@@ -1,4 +1,4 @@
-package com.visibilitytracker
+package com.viewportobserver
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

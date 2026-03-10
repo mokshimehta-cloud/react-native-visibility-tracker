@@ -4,4 +4,4 @@ export interface Spec extends TurboModule {
   multiply(a: number, b: number): number;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('VisibilityTracker');
+export default TurboModuleRegistry.getEnforcing<Spec>('ViewportObserver');

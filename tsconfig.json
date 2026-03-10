@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-visibility-tracker": ["./src/index"]
+      "react-native-viewport-observer": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

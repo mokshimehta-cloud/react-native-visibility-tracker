@@ -1,4 +1,4 @@
-package com.visibilitytracker
+package com.viewportobserver
 
 import android.graphics.Rect
 import android.os.Handler

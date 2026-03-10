@@ -1,5 +1,5 @@
 {
-  "name": "react-native-visibility-tracker",
+  "name": "react-native-viewport-observer",
   "version": "0.1.0",
   "description": "feature for having more videos forhandling smoothly in react native without extra load.",
   "main": "./lib/module/index.js",
@@ -32,7 +32,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace react-native-visibility-tracker-example",
+    "example": "yarn workspace react-native-viewport-observer-example",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "build": "bob build",
     "prepack": "bob build",
@@ -48,14 +48,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mokshimehta-cloud/react-native-visibility-tracker.git"
+    "url": "git+https://github.com/mokshimehta-cloud/react-native-viewport-observer.git"
   },
   "author": "mokshi mehta <mokshi.mehta@devxconsultancy.com> (https://github.com/mokshimehta-cloud)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mokshimehta-cloud/react-native-visibility-tracker/issues"
+    "url": "https://github.com/mokshimehta-cloud/react-native-viewport-observer/issues"
   },
-  "homepage": "https://github.com/mokshimehta-cloud/react-native-visibility-tracker#readme",
+  "homepage": "https://github.com/mokshimehta-cloud/react-native-viewport-observer#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
@@ -115,11 +115,11 @@
     ]
   },
   "codegenConfig": {
-    "name": "VisibilityTrackerSpec",
+    "name": "ViewportObserverSpec",
     "type": "modules",
     "jsSrcsDir": "src",
     "android": {
-      "javaPackageName": "com.visibilitytracker"
+      "javaPackageName": "com.viewportobserver"
     }
   },
   "prettier": {
