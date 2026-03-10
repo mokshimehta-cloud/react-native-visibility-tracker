@@ -1,6 +1,6 @@
 {
   "name": "@devx-commerce/react-native-viewport-observer",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "feature for having more videos forhandling smoothly in react native without extra load.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
@@ -46,16 +46,8 @@
     "ios",
     "android"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mokshimehta-cloud/react-native-viewport-observer.git"
-  },
-  "author": "mokshi mehta <mokshi.mehta@devxconsultancy.com> (https://github.com/mokshimehta-cloud)",
+  "author": "mokshi mehta <mokshi.mehta@devxconsultancy.com>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/mokshimehta-cloud/react-native-viewport-observer/issues"
-  },
-  "homepage": "https://github.com/mokshimehta-cloud/react-native-viewport-observer#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
