@@ -47,6 +47,7 @@
     "android"
   ],
   "author": "mokshi mehta <mokshi.mehta@devxconsultancy.com>",
+  "homepage": "https://github.com/mokshimehta-cloud/react-native-viewport-observer",
   "license": "MIT",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
