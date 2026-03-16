@@ -1,7 +1,14 @@
 import { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+} from 'react-native';
 import Video from 'react-native-video';
 import { VisibilityView } from 'react-native-viewport-observer';
+import type { VisibilityViewRef } from 'react-native-viewport-observer';
 import { FlashList } from '@shopify/flash-list';
 
 const { width } = Dimensions.get('window');
@@ -169,19 +176,28 @@ const VideoRow = ({ url }: { url: string }) => {
   const [paused, setPaused] = useState(true);
   const videoRef = useRef<any>(null);
   const isReady = useRef(false);
-  const isFocused = useRef(false);
+
+  // --- ref usage: attach to VisibilityView ---
+  const visibilityRef = useRef<VisibilityViewRef>(null);
+
+  // Called on button press — reads focus state instantly without any state or useEffect
+  const handleCheckFocus = () => {
+    const focused = visibilityRef.current?.checkIsFocused() ?? false;
+    console.log(`[VisibilityView] isFocused → ${focused}`);
+  };
 
   return (
     <View style={styles.videoContainer}>
       <VisibilityView
+        ref={visibilityRef}
         style={{ flex: 1 }}
         threshold={0.8}
         onFocus={() => {
-          isFocused.current = true;
+          console.log(`[VisibilityView] onFocus fired for: ${url}`);
           if (isReady.current) setPaused(false);
         }}
         onBlur={() => {
-          isFocused.current = false;
+          console.log(`[VisibilityView] onBlur fired for: ${url}`);
           setPaused(true);
         }}
       >
@@ -193,14 +209,13 @@ const VideoRow = ({ url }: { url: string }) => {
           resizeMode="cover"
           style={StyleSheet.absoluteFill}
           onLoad={() => {
-            // Seek while still paused — fires before onReadyForDisplay so
-            // the first displayed frame is already at the saved position.
             const saved = videoPositions.get(url);
             if (saved) videoRef.current?.seek(saved);
           }}
           onReadyForDisplay={() => {
             isReady.current = true;
-            if (isFocused.current) setPaused(false);
+            // Use ref instead of a separate isFocused state — no re-render needed
+            if (visibilityRef.current?.checkIsFocused()) setPaused(false);
           }}
           onProgress={({ currentTime }) => {
             videoPositions.set(url, currentTime);
@@ -214,6 +229,11 @@ const VideoRow = ({ url }: { url: string }) => {
           }}
         />
       </VisibilityView>
+
+      {/* Tap to check focus via ref — no state involved */}
+      <TouchableOpacity style={styles.checkBtn} onPress={handleCheckFocus}>
+        <Text style={styles.checkBtnText}>Check isFocused (ref)</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -267,18 +287,20 @@ const styles = StyleSheet.create({
     height: 500,
   },
 
-  badge: {
+  checkBtn: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    padding: 6,
+    bottom: 12,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: 8,
   },
 
-  badgeText: {
+  checkBtnText: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '600',
   },
 
   textCard: {
