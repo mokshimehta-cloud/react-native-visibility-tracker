@@ -7,16 +7,23 @@ class VisibilityView: UIView {
     @objc var onVisibilityChange: RCTDirectEventBlock?
 
     private var isCurrentlyVisible = false
-    private var isScrolling = false
-    private var scrollStopTimer: Timer?
-    private let scrollStopDelay: TimeInterval = 0.15
-    private var lastTimerReset: CFTimeInterval = 0
 
-    // Cached once on attach – avoids repeated superview traversal on every frame
+    // Nearest ancestor scroll view, used only to clip the visible rect. WEAK on purpose:
+    // we never message it during teardown, so its lifetime is irrelevant to safety.
     private weak var cachedScrollView: UIScrollView?
-    private var isObservingScrollView = false
 
-    private static let kContentOffset = "contentOffset"
+    // Scroll is sampled with a display link instead of KVO on the scroll view.
+    //
+    // KVO here observed a foreign object this view does not own (an ancestor scroll view,
+    // shared with React Native and other VisibilityViews). Every KVO teardown variant
+    // (weak ref, strong ref, NSKeyValueObservation) crashed in `removeObserver` during the
+    // navigation-pop view-tree teardown, inside `_NSKeyValueRetainedObservationInfoForObject`
+    // — the scroll view's shared KVO observation list gets a dangling entry and our removal
+    // walks it. A display link registers no observer on any foreign object, so there is
+    // nothing to tear down unsafely and nothing to corrupt: it cannot reproduce that crash.
+    // A weak proxy target keeps the link from retaining self.
+    private var displayLink: CADisplayLink?
+    private var displayLinkProxy: DisplayLinkProxy?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -31,62 +38,50 @@ class VisibilityView: UIView {
     override func didMoveToWindow() {
         super.didMoveToWindow()
         if window != nil {
-            attachScrollObserver()
+            startSampling()
             checkVisibility()
         } else {
-            detachScrollObserver()
-            scrollStopTimer?.invalidate()
-            scrollStopTimer = nil
+            stopSampling()
         }
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
         // Catches initial render and any layout-driven position changes
-        if !isScrolling {
-            checkVisibility()
-        }
+        checkVisibility()
     }
 
     override func removeFromSuperview() {
-        detachScrollObserver()
-        scrollStopTimer?.invalidate()
+        stopSampling()
         super.removeFromSuperview()
     }
 
     deinit {
-        detachScrollObserver()
-        scrollStopTimer?.invalidate()
+        stopSampling()
     }
 
-    // MARK: – Scroll observation (replaces CADisplayLink polling)
+    // MARK: – Scroll sampling (display link; no KVO on the scroll view)
 
-    private func attachScrollObserver() {
-        detachScrollObserver()
-        guard let sv = findParentScrollView() else { return }
-        cachedScrollView = sv
-        sv.addObserver(self, forKeyPath: Self.kContentOffset, options: .new, context: nil)
-        isObservingScrollView = true
+    private func startSampling() {
+        stopSampling()
+        cachedScrollView = findParentScrollView()
+        let proxy = DisplayLinkProxy(self)
+        let link = CADisplayLink(target: proxy, selector: #selector(DisplayLinkProxy.tick(_:)))
+        link.preferredFramesPerSecond = 30
+        link.add(to: .main, forMode: .common)
+        displayLinkProxy = proxy
+        displayLink = link
     }
 
-    private func detachScrollObserver() {
-        guard isObservingScrollView, let sv = cachedScrollView else { return }
-        sv.removeObserver(self, forKeyPath: Self.kContentOffset)
-        isObservingScrollView = false
+    private func stopSampling() {
+        displayLink?.invalidate()
+        displayLink = nil
+        displayLinkProxy = nil
         cachedScrollView = nil
     }
 
-    // KVO fires on the main thread whenever the scroll view's contentOffset changes.
-    // This replaces 30 fps CADisplayLink polling with zero-cost idle behaviour.
-    override func observeValue(
-        forKeyPath keyPath: String?,
-        of object: Any?,
-        change: [NSKeyValueChangeKey: Any]?,
-        context: UnsafeMutableRawPointer?
-    ) {
-        if keyPath == Self.kContentOffset {
-            onScrollDetected()
-        }
+    fileprivate func onDisplayTick() {
+        checkVisibility()
     }
 
     // MARK: – Scroll state
@@ -102,25 +97,9 @@ class VisibilityView: UIView {
         return nil
     }
 
-    private func onScrollDetected() {
-        isScrolling = true
-        // Throttle to once per frame (~16 ms) so N views observing the same scroll view
-        // don't each invalidate/create a Timer on every KVO callback.
-        let now = CACurrentMediaTime()
-        guard now - lastTimerReset >= 0.016 else { return }
-        lastTimerReset = now
-        scrollStopTimer?.invalidate()
-        scrollStopTimer = Timer.scheduledTimer(withTimeInterval: scrollStopDelay, repeats: false) { [weak self] _ in
-            self?.isScrolling = false
-            self?.checkVisibility()
-        }
-    }
-
     // MARK: – Visibility calculation
 
     private func checkVisibility() {
-        guard !isScrolling else { return }
-
         guard let window = window else {
             updateVisibility(false)
             return
@@ -148,5 +127,19 @@ class VisibilityView: UIView {
         if visible == isCurrentlyVisible { return }
         isCurrentlyVisible = visible
         onVisibilityChange?(["focused": visible])
+    }
+}
+
+// Weak proxy so the CADisplayLink does not retain the VisibilityView. Avoids a retain
+// cycle and lets deinit run (which invalidates the link).
+private final class DisplayLinkProxy {
+    weak var target: VisibilityView?
+
+    init(_ target: VisibilityView) {
+        self.target = target
+    }
+
+    @objc func tick(_ link: CADisplayLink) {
+        target?.onDisplayTick()
     }
 }
