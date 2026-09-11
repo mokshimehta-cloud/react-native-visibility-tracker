@@ -4,9 +4,14 @@ import React
 class VisibilityView: UIView {
 
     @objc var threshold: NSNumber = 0.5
+    @objc var trackDuringScroll: Bool = false
     @objc var onVisibilityChange: RCTDirectEventBlock?
 
     private var isCurrentlyVisible = false
+
+    // Last sampled scroll offset, used only when `trackDuringScroll` is false to
+    // detect an in-flight scroll and suppress emission until it settles.
+    private var lastContentOffset: CGPoint?
 
     // Nearest ancestor scroll view, used only to clip the visible rect. WEAK on purpose:
     // we never message it during teardown, so its lifetime is irrelevant to safety.
@@ -81,6 +86,19 @@ class VisibilityView: UIView {
     }
 
     fileprivate func onDisplayTick() {
+        // Opt-out of during-scroll emission (the default): while the scroll
+        // offset is changing, suppress focus/blur and report only once it
+        // settles — mirrors the Android during-scroll suppression. The display
+        // link keeps running either way (never gated), so other consumers still
+        // get their settle updates and the no-KVO crash fix is untouched.
+        // With `trackDuringScroll` on, emit every frame so an on-screen view
+        // keeps reporting focus while the list scrolls.
+        if !trackDuringScroll, let scrollView = cachedScrollView {
+            let offset = scrollView.contentOffset
+            let scrolling = offset != (lastContentOffset ?? offset)
+            lastContentOffset = offset
+            if scrolling { return }
+        }
         checkVisibility()
     }
 

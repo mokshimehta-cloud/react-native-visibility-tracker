@@ -31,6 +31,7 @@ class VisibilityView(
 
     private var isFocused = false
     private var threshold = 0.5f
+    private var trackDuringScroll = false
     private var isScrolling = false
     private var lastScrollY = 0
     private var lastScrollX = 0
@@ -67,6 +68,10 @@ class VisibilityView(
     fun setThreshold(value: Float) {
         threshold = value
         if (!isScrolling) checkVisibility()
+    }
+
+    fun setTrackDuringScroll(value: Boolean) {
+        trackDuringScroll = value
     }
 
     override fun onAttachedToWindow() {
@@ -113,12 +118,15 @@ class VisibilityView(
         val now = android.os.SystemClock.uptimeMillis()
         if (now - lastScrollHandledAt < 16L) return
         lastScrollHandledAt = now
+        // Opt-in: re-check visibility on every throttled scroll frame so
+        // focus/blur fire during the scroll, not only after it settles.
+        if (trackDuringScroll) checkVisibility()
         handler.removeCallbacks(scrollStopRunnable)
         handler.postDelayed(scrollStopRunnable, scrollStopDelay)
     }
 
     private fun checkVisibility() {
-        if (isScrolling) return
+        if (isScrolling && !trackDuringScroll) return
 
         if (!isAttachedToWindow || height == 0) {
             updateFocus(false)

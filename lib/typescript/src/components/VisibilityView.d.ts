@@ -127,6 +127,15 @@ declare const VisibilityView: import("react").ForwardRefExoticComponent<Readonly
     experimental_accessibilityOrder?: Array<string> | undefined;
 }>, never>> & {
     threshold?: number;
+    /**
+     * Emit focus/blur DURING an active scroll instead of only after it settles.
+     * Off by default. When off, the view reports visibility on settle only
+     * (Android suppresses its checks mid-scroll; iOS suppresses emission while
+     * the scroll offset is changing). Opt in per-view where live during-scroll
+     * visibility is worth the extra work — e.g. keeping an on-screen video
+     * playing while the list scrolls.
+     */
+    trackDuringScroll?: boolean;
     onFocus?: () => void;
     onBlur?: () => void;
 } & import("react").RefAttributes<VisibilityViewRef>>;

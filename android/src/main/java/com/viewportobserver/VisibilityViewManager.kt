@@ -18,6 +18,11 @@ class VisibilityViewManager : ViewGroupManager<VisibilityView>() {
         view.setThreshold(threshold)
     }
 
+    @ReactProp(name = "trackDuringScroll", defaultBoolean = false)
+    fun setTrackDuringScroll(view: VisibilityView, trackDuringScroll: Boolean) {
+        view.setTrackDuringScroll(trackDuringScroll)
+    }
+
     override fun getExportedCustomDirectEventTypeConstants(): Map<String, Any> {
         return MapBuilder.builder<String, Any>()
             .put("topVisibilityChange", MapBuilder.of("registrationName", "onVisibilityChange"))
