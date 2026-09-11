@@ -38,6 +38,7 @@ import { VisibilityView } from '@devx-commerce/react-native-viewport-observer';
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `threshold` | `number` | `0.5` | Fraction of the view that must be visible to trigger `onFocus`. Range: `0.0` – `1.0` |
+| `trackDuringScroll` | `boolean` | `false` | Emit `onFocus`/`onBlur` **during** an active scroll instead of only after it settles. See [During-scroll tracking](#during-scroll-tracking). |
 | `onFocus` | `() => void` | — | Called when the view enters the viewport |
 | `onBlur` | `() => void` | — | Called when the view exits the viewport |
 | `style` | `ViewStyle` | — | Standard React Native view styles |
@@ -129,6 +130,29 @@ This is more reliable and performant than JS-based scroll position calculations 
 - No scroll event listeners needed
 - Works with any scroll container (`FlatList`, `FlashList`, `ScrollView`, etc.)
 - Native-level precision — no frame drops
+
+## During-scroll tracking
+
+By default (`trackDuringScroll={false}`) the observer reports visibility only once a scroll **settles** — it stays quiet while the list is moving. This keeps scrolling cheap when you have many observed views, and is the right default for most cases.
+
+Set `trackDuringScroll={true}` to also receive `onFocus`/`onBlur` **while the list is scrolling**. Use it when a view must react the instant it enters or leaves the viewport mid-scroll — e.g. keeping the on-screen video in a feed playing as the user scrolls, while off-screen ones pause.
+
+```tsx
+<VisibilityView
+  style={{ flex: 1 }}
+  threshold={0.6}
+  trackDuringScroll
+  onFocus={() => setPaused(false)}
+  onBlur={() => setPaused(true)}
+>
+  {/* video */}
+</VisibilityView>
+```
+
+Notes:
+- **Opt-in per view.** Views that don't set it keep the cheaper settle-only behaviour.
+- **Cost.** During-scroll tracking runs the visibility check each frame while scrolling — enable it only where the live feedback is worth it, and cap how many such views can be active at once if you have a busy screen.
+- **Platform detail.** Android re-checks on each throttled scroll frame; iOS emits on each display-link frame while the scroll offset is changing. Both fall back to settle-only when the prop is off.
 
 ## Tips
 

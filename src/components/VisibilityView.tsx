@@ -8,6 +8,7 @@ type VisibilityEvent = {
 
 type NativeProps = ViewProps & {
   threshold?: number;
+  trackDuringScroll?: boolean;
   onVisibilityChange?: (event: NativeSyntheticEvent<VisibilityEvent>) => void;
 };
 
@@ -16,6 +17,15 @@ const NativeVisibilityView =
 
 type Props = ViewProps & {
   threshold?: number;
+  /**
+   * Emit focus/blur DURING an active scroll instead of only after it settles.
+   * Off by default. When off, the view reports visibility on settle only
+   * (Android suppresses its checks mid-scroll; iOS suppresses emission while
+   * the scroll offset is changing). Opt in per-view where live during-scroll
+   * visibility is worth the extra work — e.g. keeping an on-screen video
+   * playing while the list scrolls.
+   */
+  trackDuringScroll?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
 };
@@ -26,7 +36,10 @@ export type VisibilityViewRef = {
 };
 
 const VisibilityView = forwardRef<VisibilityViewRef, Props>(
-  function VisibilityView({ threshold = 0.5, onFocus, onBlur, ...rest }, ref) {
+  function VisibilityView(
+    { threshold = 0.5, trackDuringScroll = false, onFocus, onBlur, ...rest },
+    ref
+  ) {
     const isFocusedRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
@@ -37,6 +50,7 @@ const VisibilityView = forwardRef<VisibilityViewRef, Props>(
       <NativeVisibilityView
         {...rest}
         threshold={threshold}
+        trackDuringScroll={trackDuringScroll}
         onVisibilityChange={(event) => {
           const { focused } = event.nativeEvent;
           isFocusedRef.current = focused;
